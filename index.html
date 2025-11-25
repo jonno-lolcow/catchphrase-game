@@ -499,7 +499,6 @@
     const imageLayer = document.getElementById("imageLayer");
     const tilesLayer = document.getElementById("tilesLayer");
     const overlayMessage = document.getElementById("overlayMessage");
-
     const reaperMascot = document.getElementById("reaperMascot");
 
     // Collapsible setup
@@ -573,10 +572,8 @@
     function triggerReaperAnimation(type) {
       if (!reaperMascot) return;
       reaperMascot.classList.remove("wrong", "correct");
-
-      // Force reflow so animation restarts even if same class applied twice
+      // restart animation
       void reaperMascot.offsetWidth;
-
       if (type === "wrong") {
         reaperMascot.classList.add("wrong");
       } else if (type === "correct") {
@@ -603,9 +600,7 @@
     // ----- Load puzzles.json -----
     async function loadPuzzles() {
       try {
-        const res = await fetch("data/puzzles.json", {
-          cache: "no-store"
-        });
+        const res = await fetch("data/puzzles.json", { cache: "no-store" });
         if (!res.ok) {
           throw new Error("HTTP " + res.status);
         }
@@ -673,3 +668,155 @@
         const div = document.createElement("div");
         div.classList.add("tile");
         tilesLayer.appendChild(div);
+        tiles.push(div);
+        unrevealedTileIndices.push(i);
+      }
+
+      gameActive = true;
+      disableGameControls(false);
+      revealAllBtn.disabled = false;
+      guessInput.value = "";
+      setSetupStatus(`Round started with ${rows} × ${cols} grid (${totalTiles} tiles).`, "ok");
+      setGuessStatus("Reveal a tile and let the current player guess or skip.", "ok");
+      hideOverlayMessage();
+
+      if (!hasStartedAtLeastOnce) {
+        hasStartedAtLeastOnce = true;
+        setTimeout(() => setSetupCollapsed(true), 200);
+      }
+    }
+
+    startRoundBtn.addEventListener("click", setupRound);
+
+    // ----- Reveal Tiles -----
+    function revealRandomTile() {
+      if (!gameActive) {
+        setGuessStatus("Start a round first.", "error");
+        return;
+      }
+      if (unrevealedTileIndices.length === 0) {
+        setGuessStatus("All tiles are already revealed.", "error");
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * unrevealedTileIndices.length);
+      const tileIndex = unrevealedTileIndices[randomIndex];
+      unrevealedTileIndices.splice(randomIndex, 1);
+
+      const tile = tiles[tileIndex];
+      if (tile && !tile.classList.contains("revealed")) {
+        tile.classList.add("revealed");
+        revealedTilesCount++;
+      }
+
+      setGuessStatus("Tile revealed. Current player may guess or skip.", "");
+    }
+
+    revealTileBtn.addEventListener("click", revealRandomTile);
+
+    // ----- Reveal All -----
+    function revealAllTiles() {
+      tiles.forEach((tile) => tile.classList.add("revealed"));
+      unrevealedTileIndices = [];
+      revealedTilesCount = totalTiles;
+    }
+
+    revealAllBtn.addEventListener("click", () => {
+      if (!currentPuzzle) {
+        revealAllTiles();
+        return;
+      }
+      if (!gameActive) {
+        revealAllTiles();
+        return;
+      }
+      revealAllTiles();
+      gameActive = false;
+      disableGameControls(true);
+      showOverlayMessage("Round over – no correct guess!");
+      setGuessStatus("Round ended. Click Start / Reset Round for a new puzzle.", "error");
+    });
+
+    // ----- Guess Handling -----
+    function handleGuess() {
+      if (!gameActive) {
+        setGuessStatus("Start a round first.", "error");
+        return;
+      }
+      if (!currentPuzzle) {
+        setGuessStatus("No puzzle selected. Start a round.", "error");
+        return;
+      }
+
+      const guess = guessInput.value.trim();
+      if (!guess) {
+        setGuessStatus("Enter a guess first or use Skip Turn.", "error");
+        return;
+      }
+
+      const normalizedGuess = normalizeAnswer(guess);
+      const isCorrect = currentPuzzleAnswersNormalized.some((ans) => ans === normalizedGuess);
+
+      if (isCorrect) {
+        const tilesRemaining = totalTiles - revealedTilesCount;
+        const pointsAwarded = tilesRemaining + 1;
+        scores[currentPlayerIndex] += pointsAwarded;
+        updateScores();
+
+        const playerName = currentPlayerIndex === 0 ? "Xylie" : "Josh";
+
+        setGuessStatus(
+          `${playerName} is correct! +${pointsAwarded} points (tiles remaining: ${tilesRemaining}).`,
+          "ok"
+        );
+        revealAllTiles();
+        gameActive = false;
+        disableGameControls(true);
+        showOverlayMessage(`${playerName} got it!\n+${pointsAwarded} points`);
+
+        triggerReaperAnimation("correct");
+      } else {
+        setGuessStatus("Incorrect guess. Turn passes to the other player.", "error");
+        guessInput.value = "";
+        switchTurn();
+        triggerReaperAnimation("wrong");
+      }
+    }
+
+    submitGuessBtn.addEventListener("click", handleGuess);
+
+    guessInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleGuess();
+      }
+    });
+
+    skipGuessBtn.addEventListener("click", () => {
+      if (!gameActive) {
+        setGuessStatus("Start a round first.", "error");
+        return;
+      }
+      setGuessStatus("Turn skipped. Passing to the other player.", "");
+      guessInput.value = "";
+      switchTurn();
+      triggerReaperAnimation("wrong");
+    });
+
+    // ----- Scores reset -----
+    resetScoresBtn.addEventListener("click", () => {
+      scores = [0, 0];
+      updateScores();
+      setSetupStatus("Scores reset.", "ok");
+    });
+
+    // ----- Init -----
+    updateScores();
+    highlightCurrentTurn();
+    disableGameControls(true);
+    setSetupCollapsed(false);
+    setSetupStatus("Loading puzzles…", "");
+    loadPuzzles();
+  </script>
+</body>
+</html>
