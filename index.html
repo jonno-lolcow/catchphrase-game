@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Catchphrase-Style Reveal Game</title>
+  <title>Reaper Reveal</title>
   <style>
     :root {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -21,7 +21,7 @@
 
     h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       text-align: center;
     }
 
@@ -37,7 +37,6 @@
       background: #1f1f1f;
       border-radius: 8px;
       padding: 0.75rem 1rem;
-      flex: 1 1 260px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
     }
 
@@ -47,6 +46,13 @@
       border-bottom: 1px solid #333;
       padding-bottom: 0.25rem;
       margin-bottom: 0.5rem;
+    }
+
+    .side-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      flex: 1 1 260px;
     }
 
     label {
@@ -218,16 +224,23 @@
     }
 
     .score-badge {
-      padding: 0.35rem 0.6rem;
+      padding: 0.6rem 1.1rem;
       border-radius: 999px;
       background: #111;
       border: 1px solid #444;
-      min-width: 120px;
+      min-width: 140px;
+      min-height: 70px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      box-sizing: border-box;
     }
 
     .current-turn {
       border-color: #f5c14a;
-      box-shadow: 0 0 8px rgba(245, 193, 74, 0.35);
+      box-shadow: 0 0 8px rgba(245, 193, 74, 0.6);
     }
 
     .score-badge span {
@@ -253,6 +266,33 @@
       margin-left: 0.4rem;
     }
 
+    /* Collapsible setup */
+    .collapsible-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #333;
+      margin-bottom: 0.5rem;
+    }
+
+    .collapsible-header h2 {
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .collapsible-icon {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .collapsible-content.collapsed {
+      display: none;
+    }
+
     @media (max-width: 800px) {
       .container {
         flex-direction: column;
@@ -264,94 +304,90 @@
   </style>
 </head>
 <body>
-  <h1>Catchphrase-Style Reveal Game</h1>
+  <h1>Reaper Reveal</h1>
 
   <div class="container">
-    <!-- Left: Game controls -->
-    <div class="panel">
-      <h2>Setup</h2>
-
-      <p class="small" id="puzzleLoadInfo">Loading puzzles…</p>
-
-      <div class="row">
-        <div style="flex:1">
-          <label for="rowsInput">Rows</label>
-          <input type="number" id="rowsInput" min="1" max="20" value="4" />
-        </div>
-        <div style="flex:1">
-          <label for="colsInput">Columns</label>
-          <input type="number" id="colsInput" min="1" max="20" value="6" />
-        </div>
-      </div>
-
-      <div class="row">
-        <button id="startRoundBtn" class="primary">Start / Reset Round</button>
-        <button id="revealAllBtn" class="danger" disabled>Reveal All / Give Up</button>
-      </div>
-
-      <div class="row">
-        <button id="resetScoresBtn">Reset Scores</button>
-      </div>
-
-      <div class="status" id="setupStatus"></div>
-    </div>
-
-    <!-- Right: Scores / Guessing -->
-    <div class="panel">
-      <h2>Players & Scoring</h2>
-
-      <label for="player1Input">Player 1 name</label>
-      <input type="text" id="player1Input" value="Player 1" />
-
-      <label for="player2Input">Player 2 name</label>
-      <input type="text" id="player2Input" value="Player 2" />
-
-      <div class="score-row" style="margin-top:0.6rem;">
-        <div class="score-badge" id="score1Badge">
-          <span class="score-name" id="score1Name">Player 1</span>
-          <span class="score-value"><span id="score1">0</span> pts</span>
-        </div>
-        <div class="score-badge" id="score2Badge">
-          <span class="score-name" id="score2Name">Player 2</span>
-          <span class="score-value"><span id="score2">0</span> pts</span>
-        </div>
-      </div>
-
-      <p class="small">
-        <strong>Scoring:</strong> Points for a correct guess = tiles remaining + 1.
-        Earlier guesses = more points.
-      </p>
-
-      <div class="row" style="margin-top:0.8rem;">
-        <span>Current turn: <strong id="currentTurnLabel">Player 1</strong></span>
-        <span class="tag">Changes after each guess</span>
-      </div>
-
-      <h2 style="margin-top:1rem;">Guess</h2>
-
-      <label for="guessInput">Enter guess</label>
-      <input type="text" id="guessInput" placeholder="Enter catchphrase guess here..." />
-
-      <div class="row">
-        <button id="submitGuessBtn">Submit Guess</button>
-        <button id="revealTileBtn" class="primary">Reveal Random Tile</button>
-      </div>
-
-      <div class="status" id="guessStatus"></div>
-    </div>
-
-    <!-- Board -->
+    <!-- Board on the left -->
     <div class="board-wrapper">
-      <h2>Board</h2>
       <div id="boardContainer">
         <div id="imageLayer"></div>
         <div id="tilesLayer"></div>
         <div id="overlayMessage"></div>
       </div>
-      <p class="small">
-        Host flow per turn: <strong>Reveal Random Tile → Player makes a guess → Submit Guess.</strong><br />
-        Puzzles and answers are pre-defined; hosts won’t see the correct answer unless they inspect the files.
-      </p>
+    </div>
+
+    <!-- Right column: players/guess + collapsible setup -->
+    <div class="side-column">
+      <!-- Players & Guess -->
+      <div class="panel">
+        <h2>Players & Turns</h2>
+
+        <div class="score-row" style="margin-top:0.6rem;">
+          <div class="score-badge" id="score1Badge">
+            <span class="score-name" id="score1Name">Xylie</span>
+            <span class="score-value"><span id="score1">0</span> pts</span>
+          </div>
+          <div class="score-badge" id="score2Badge">
+            <span class="score-name" id="score2Name">Josh</span>
+            <span class="score-value"><span id="score2">0</span> pts</span>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:0.8rem;">
+          <span>Current turn: <strong id="currentTurnLabel">Xylie</strong></span>
+          <span class="tag">Changes after each guess / skip</span>
+        </div>
+
+        <h2 style="margin-top:1rem;">Guess</h2>
+
+        <label for="guessInput">Enter guess</label>
+        <input type="text" id="guessInput" placeholder="Enter catchphrase guess here..." />
+
+        <div class="row">
+          <button id="submitGuessBtn" class="primary">Submit Guess</button>
+          <button id="skipGuessBtn">Skip Turn</button>
+        </div>
+
+        <div class="row" style="margin-top:0.8rem;">
+          <button id="revealTileBtn" class="primary">Reveal Random Tile</button>
+        </div>
+
+        <div class="status" id="guessStatus"></div>
+      </div>
+
+      <!-- Collapsible Setup -->
+      <div class="panel" id="setupPanel">
+        <div class="collapsible-header" id="setupToggle">
+          <h2>Setup</h2>
+          <span class="collapsible-icon" id="setupToggleIcon">▲</span>
+        </div>
+
+        <div id="setupContent" class="collapsible-content">
+          <p class="small" id="puzzleLoadInfo">Loading puzzles…</p>
+
+          <div class="row">
+            <div style="flex:1">
+              <label for="rowsInput">Rows</label>
+              <input type="number" id="rowsInput" min="1" max="20" value="4" />
+            </div>
+            <div style="flex:1">
+              <label for="colsInput">Columns</label>
+              <input type="number" id="colsInput" min="1" max="20" value="6" />
+            </div>
+          </div>
+
+          <div class="row">
+            <button id="startRoundBtn" class="primary">Start / Reset Round</button>
+            <button id="revealAllBtn" class="danger" disabled>Reveal All / Give Up</button>
+          </div>
+
+          <div class="row">
+            <button id="resetScoresBtn">Reset Scores</button>
+          </div>
+
+          <div class="status" id="setupStatus"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -365,8 +401,9 @@
     let totalTiles = 0;
     let revealedTilesCount = 0;
     let gameActive = false;
-    let currentPlayerIndex = 0; // 0 = player 1, 1 = player 2
+    let currentPlayerIndex = 0; // 0 = Xylie, 1 = Josh
     let scores = [0, 0];
+    let hasStartedAtLeastOnce = false;
 
     // ----- DOM Elements -----
     const rowsInput = document.getElementById("rowsInput");
@@ -380,8 +417,6 @@
     const guessStatus = document.getElementById("guessStatus");
     const puzzleLoadInfo = document.getElementById("puzzleLoadInfo");
 
-    const player1Input = document.getElementById("player1Input");
-    const player2Input = document.getElementById("player2Input");
     const score1El = document.getElementById("score1");
     const score2El = document.getElementById("score2");
     const score1Badge = document.getElementById("score1Badge");
@@ -392,12 +427,18 @@
 
     const guessInput = document.getElementById("guessInput");
     const submitGuessBtn = document.getElementById("submitGuessBtn");
+    const skipGuessBtn = document.getElementById("skipGuessBtn");
     const revealTileBtn = document.getElementById("revealTileBtn");
 
     const boardContainer = document.getElementById("boardContainer");
     const imageLayer = document.getElementById("imageLayer");
     const tilesLayer = document.getElementById("tilesLayer");
     const overlayMessage = document.getElementById("overlayMessage");
+
+    // Collapsible setup
+    const setupToggle = document.getElementById("setupToggle");
+    const setupToggleIcon = document.getElementById("setupToggleIcon");
+    const setupContent = document.getElementById("setupContent");
 
     // ----- Helpers -----
     function setSetupStatus(message, type = "") {
@@ -421,12 +462,10 @@
     }
 
     function updatePlayerNames() {
-      const p1 = player1Input.value.trim() || "Player 1";
-      const p2 = player2Input.value.trim() || "Player 2";
-      score1NameEl.textContent = p1;
-      score2NameEl.textContent = p2;
+      score1NameEl.textContent = "Xylie";
+      score2NameEl.textContent = "Josh";
       currentTurnLabel.textContent =
-        currentPlayerIndex === 0 ? p1 : p2;
+        currentPlayerIndex === 0 ? "Xylie" : "Josh";
     }
 
     function updateScores() {
@@ -456,10 +495,28 @@
     }
 
     function disableGameControls(disabled) {
-      submitGuessBtn.disabled = disabled;
       revealTileBtn.disabled = disabled;
       revealAllBtn.disabled = disabled;
+      submitGuessBtn.disabled = disabled;
+      skipGuessBtn.disabled = disabled;
+      guessInput.disabled = disabled;
     }
+
+    // Collapsible behaviour
+    function setSetupCollapsed(collapsed) {
+      if (collapsed) {
+        setupContent.classList.add("collapsed");
+        setupToggleIcon.textContent = "▼";
+      } else {
+        setupContent.classList.remove("collapsed");
+        setupToggleIcon.textContent = "▲";
+      }
+    }
+
+    setupToggle.addEventListener("click", () => {
+      const collapsed = setupContent.classList.contains("collapsed");
+      setSetupCollapsed(!collapsed);
+    });
 
     // ----- Load puzzles.json -----
     async function loadPuzzles() {
@@ -510,7 +567,6 @@
         return;
       }
 
-      // Choose puzzle at random
       const puzzle = pickRandomPuzzle();
       if (!puzzle || !puzzle.image || !Array.isArray(puzzle.answers) || puzzle.answers.length === 0) {
         setSetupStatus("Random puzzle is invalid. Check data/puzzles.json.", "error");
@@ -520,10 +576,8 @@
       currentPuzzle = puzzle;
       currentPuzzleAnswersNormalized = puzzle.answers.map(normalizeAnswer);
 
-      // Apply image
       imageLayer.style.backgroundImage = `url('${puzzle.image}')`;
 
-      // Build tiles
       tilesLayer.innerHTML = "";
       tiles = [];
       unrevealedTileIndices = [];
@@ -544,9 +598,16 @@
       gameActive = true;
       disableGameControls(false);
       revealAllBtn.disabled = false;
+      guessInput.value = "";
       setSetupStatus(`Round started with ${rows} × ${cols} grid (${totalTiles} tiles).`, "ok");
-      setGuessStatus("Reveal a tile, then make a guess.", "ok");
+      setGuessStatus("Reveal a tile and let the current player guess or skip.", "ok");
       hideOverlayMessage();
+
+      if (!hasStartedAtLeastOnce) {
+        hasStartedAtLeastOnce = true;
+        // Auto-collapse setup after first round starts
+        setTimeout(() => setSetupCollapsed(true), 200);
+      }
     }
 
     startRoundBtn.addEventListener("click", () => {
@@ -574,7 +635,7 @@
         revealedTilesCount++;
       }
 
-      setGuessStatus("Tile revealed. Enter your guess.", "");
+      setGuessStatus("Tile revealed. Current player may guess or skip.", "");
     }
 
     revealTileBtn.addEventListener("click", () => {
@@ -590,7 +651,6 @@
 
     revealAllBtn.addEventListener("click", () => {
       if (!currentPuzzle) {
-        // Still allow it to show empty board state
         revealAllTiles();
         return;
       }
@@ -618,7 +678,7 @@
 
       const guess = guessInput.value.trim();
       if (!guess) {
-        setGuessStatus("Enter a guess first.", "error");
+        setGuessStatus("Enter a guess first or use Skip Turn.", "error");
         return;
       }
 
@@ -627,14 +687,11 @@
 
       if (isCorrect) {
         const tilesRemaining = totalTiles - revealedTilesCount;
-        const pointsAwarded = tilesRemaining + 1; // simple formula
+        const pointsAwarded = tilesRemaining + 1;
         scores[currentPlayerIndex] += pointsAwarded;
         updateScores();
 
-        const playerName =
-          currentPlayerIndex === 0
-            ? (player1Input.value.trim() || "Player 1")
-            : (player2Input.value.trim() || "Player 2");
+        const playerName = currentPlayerIndex === 0 ? "Xylie" : "Josh";
 
         setGuessStatus(
           `${playerName} is correct! +${pointsAwarded} points (tiles remaining: ${tilesRemaining}).`,
@@ -651,14 +708,23 @@
       }
     }
 
-    submitGuessBtn.addEventListener("click", () => {
-      handleGuess();
-    });
+    submitGuessBtn.addEventListener("click", handleGuess);
 
     guessInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
+        e.preventDefault();
         handleGuess();
       }
+    });
+
+    skipGuessBtn.addEventListener("click", () => {
+      if (!gameActive) {
+        setGuessStatus("Start a round first.", "error");
+        return;
+      }
+      setGuessStatus("Turn skipped. Passing to the other player.", "");
+      guessInput.value = "";
+      switchTurn();
     });
 
     // ----- Scores reset -----
@@ -668,14 +734,11 @@
       setSetupStatus("Scores reset.", "ok");
     });
 
-    // ----- Player name changes -----
-    player1Input.addEventListener("input", updatePlayerNames);
-    player2Input.addEventListener("input", updatePlayerNames);
-
     // ----- Init -----
     updateScores();
     highlightCurrentTurn();
     disableGameControls(true);
+    setSetupCollapsed(false); // visible at start
     setSetupStatus("Loading puzzles…", "");
     loadPuzzles();
   </script>
