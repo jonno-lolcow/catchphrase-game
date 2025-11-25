@@ -34,7 +34,7 @@
       gap: 0.75rem;
       width: 96vw;
       max-width: 96vw;
-      align-items: stretch;
+      align-items: flex-start;
     }
 
     .panel {
@@ -270,49 +270,51 @@
       margin-left: 0.4rem;
     }
 
-    /* Reaper mascot */
-    #reaperMascot {
-      position: absolute;
-      right: 0.8rem;
-      bottom: 0.6rem;
+    /* Reaper mascot panel on the right */
+    #reaperMascotWrapper {
+      margin-top: 0.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
       pointer-events: none;
-      opacity: 0.95;
     }
 
-    #reaperMascot img {
-      max-height: 150px;
-      max-width: 25%;
-      height: auto;
+    #reaperMascotWrapper img {
+      max-height: 320px; /* make him big */
       width: auto;
-      filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.8));
+      opacity: 0.95;
+      filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9));
+      transition: filter 0.2s ease;
     }
 
     /* Animations */
     @keyframes reaper-wrong {
       0%   { transform: translateX(0); }
-      15%  { transform: translateX(-8px); }
-      30%  { transform: translateX(8px); }
-      45%  { transform: translateX(-6px); }
-      60%  { transform: translateX(6px); }
-      75%  { transform: translateX(-3px); }
+      15%  { transform: translateX(-10px); }
+      30%  { transform: translateX(10px); }
+      45%  { transform: translateX(-8px); }
+      60%  { transform: translateX(8px); }
+      75%  { transform: translateX(-4px); }
       100% { transform: translateX(0); }
     }
 
     @keyframes reaper-correct {
       0%   { transform: scale(1) rotate(0deg); }
-      20%  { transform: scale(1.08) rotate(-2deg); }
+      20%  { transform: scale(1.07) rotate(-2deg); }
       40%  { transform: scale(1.12) rotate(2deg); }
       60%  { transform: scale(1.08) rotate(-1deg); }
       80%  { transform: scale(1.04) rotate(1deg); }
       100% { transform: scale(1) rotate(0deg); }
     }
 
-    #reaperMascot.wrong img {
-      animation: reaper-wrong 0.55s ease;
+    #reaperMascotWrapper.wrong img {
+      animation: reaper-wrong 0.6s ease;
+      filter: drop-shadow(0 0 18px rgba(255, 0, 0, 0.9));
     }
 
-    #reaperMascot.correct img {
-      animation: reaper-correct 0.8s ease-out;
+    #reaperMascotWrapper.correct img {
+      animation: reaper-correct 0.85s ease-out;
+      filter: drop-shadow(0 0 24px rgba(255, 215, 0, 0.95));
     }
 
     /* Collapsible setup */
@@ -356,8 +358,8 @@
         max-width: 100%;
       }
 
-      #reaperMascot img {
-        max-height: 110px;
+      #reaperMascotWrapper img {
+        max-height: 220px;
       }
     }
   </style>
@@ -371,17 +373,11 @@
       <div id="boardContainer">
         <div id="imageLayer"></div>
         <div id="tilesLayer"></div>
-
-        <!-- Reaper mascot -->
-        <div id="reaperMascot">
-          <img src="img/reaper.png" alt="Reaper mascot">
-        </div>
-
         <div id="overlayMessage"></div>
       </div>
     </div>
 
-    <!-- Right column: players/guess + collapsible setup -->
+    <!-- Right column: players, setup, reaper -->
     <div class="side-column">
       <!-- Players & Guess -->
       <div class="panel">
@@ -453,6 +449,11 @@
           <div class="status" id="setupStatus"></div>
         </div>
       </div>
+
+      <!-- Reaper mascot -->
+      <div id="reaperMascotWrapper">
+        <img src="img/reaper.png" alt="Reaper mascot">
+      </div>
     </div>
   </div>
 
@@ -499,7 +500,8 @@
     const imageLayer = document.getElementById("imageLayer");
     const tilesLayer = document.getElementById("tilesLayer");
     const overlayMessage = document.getElementById("overlayMessage");
-    const reaperMascot = document.getElementById("reaperMascot");
+
+    const reaperMascot = document.getElementById("reaperMascotWrapper");
 
     // Collapsible setup
     const setupToggle = document.getElementById("setupToggle");
@@ -568,16 +570,30 @@
       guessInput.disabled = disabled;
     }
 
-    // Reaper animation helper
+    // Reaper animation helper with glow reset
     function triggerReaperAnimation(type) {
       if (!reaperMascot) return;
+      const img = reaperMascot.querySelector("img");
       reaperMascot.classList.remove("wrong", "correct");
+      if (img) {
+        img.style.filter = "drop-shadow(0 0 10px rgba(0,0,0,0.9))";
+      }
+
       // restart animation
       void reaperMascot.offsetWidth;
+
       if (type === "wrong") {
         reaperMascot.classList.add("wrong");
+        setTimeout(() => {
+          reaperMascot.classList.remove("wrong");
+          if (img) img.style.filter = "drop-shadow(0 0 10px rgba(0,0,0,0.9))";
+        }, 650);
       } else if (type === "correct") {
         reaperMascot.classList.add("correct");
+        setTimeout(() => {
+          reaperMascot.classList.remove("correct");
+          if (img) img.style.filter = "drop-shadow(0 0 10px rgba(0,0,0,0.9))";
+        }, 900);
       }
     }
 
