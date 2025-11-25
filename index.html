@@ -32,8 +32,8 @@
       display: flex;
       flex-wrap: nowrap;
       gap: 0.75rem;
-      width: 96vw;           /* use almost full viewport width */
-      max-width: 96vw;       /* no hard px cap */
+      width: 96vw;
+      max-width: 96vw;
       align-items: stretch;
     }
 
@@ -56,7 +56,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      flex: 1.5 0 320px;     /* a bit wider panel */
+      flex: 1.5 0 320px;
       max-width: 420px;
     }
 
@@ -151,7 +151,7 @@
 
     /* Board */
     .board-wrapper {
-      flex: 4 1 0;          /* board dominates width */
+      flex: 4 1 0;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -270,6 +270,51 @@
       margin-left: 0.4rem;
     }
 
+    /* Reaper mascot */
+    #reaperMascot {
+      position: absolute;
+      right: 0.8rem;
+      bottom: 0.6rem;
+      pointer-events: none;
+      opacity: 0.95;
+    }
+
+    #reaperMascot img {
+      max-height: 150px;
+      max-width: 25%;
+      height: auto;
+      width: auto;
+      filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.8));
+    }
+
+    /* Animations */
+    @keyframes reaper-wrong {
+      0%   { transform: translateX(0); }
+      15%  { transform: translateX(-8px); }
+      30%  { transform: translateX(8px); }
+      45%  { transform: translateX(-6px); }
+      60%  { transform: translateX(6px); }
+      75%  { transform: translateX(-3px); }
+      100% { transform: translateX(0); }
+    }
+
+    @keyframes reaper-correct {
+      0%   { transform: scale(1) rotate(0deg); }
+      20%  { transform: scale(1.08) rotate(-2deg); }
+      40%  { transform: scale(1.12) rotate(2deg); }
+      60%  { transform: scale(1.08) rotate(-1deg); }
+      80%  { transform: scale(1.04) rotate(1deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    #reaperMascot.wrong img {
+      animation: reaper-wrong 0.55s ease;
+    }
+
+    #reaperMascot.correct img {
+      animation: reaper-correct 0.8s ease-out;
+    }
+
     /* Collapsible setup */
     .collapsible-header {
       display: flex;
@@ -310,6 +355,10 @@
         flex: 1 1 100%;
         max-width: 100%;
       }
+
+      #reaperMascot img {
+        max-height: 110px;
+      }
     }
   </style>
 </head>
@@ -322,6 +371,12 @@
       <div id="boardContainer">
         <div id="imageLayer"></div>
         <div id="tilesLayer"></div>
+
+        <!-- Reaper mascot -->
+        <div id="reaperMascot">
+          <img src="img/reaper.png" alt="Reaper mascot">
+        </div>
+
         <div id="overlayMessage"></div>
       </div>
     </div>
@@ -445,6 +500,8 @@
     const tilesLayer = document.getElementById("tilesLayer");
     const overlayMessage = document.getElementById("overlayMessage");
 
+    const reaperMascot = document.getElementById("reaperMascot");
+
     // Collapsible setup
     const setupToggle = document.getElementById("setupToggle");
     const setupToggleIcon = document.getElementById("setupToggleIcon");
@@ -510,6 +567,21 @@
       submitGuessBtn.disabled = disabled;
       skipGuessBtn.disabled = disabled;
       guessInput.disabled = disabled;
+    }
+
+    // Reaper animation helper
+    function triggerReaperAnimation(type) {
+      if (!reaperMascot) return;
+      reaperMascot.classList.remove("wrong", "correct");
+
+      // Force reflow so animation restarts even if same class applied twice
+      void reaperMascot.offsetWidth;
+
+      if (type === "wrong") {
+        reaperMascot.classList.add("wrong");
+      } else if (type === "correct") {
+        reaperMascot.classList.add("correct");
+      }
     }
 
     // Collapsible behaviour
@@ -601,155 +673,3 @@
         const div = document.createElement("div");
         div.classList.add("tile");
         tilesLayer.appendChild(div);
-        tiles.push(div);
-        unrevealedTileIndices.push(i);
-      }
-
-      gameActive = true;
-      disableGameControls(false);
-      revealAllBtn.disabled = false;
-      guessInput.value = "";
-      setSetupStatus(`Round started with ${rows} × ${cols} grid (${totalTiles} tiles).`, "ok");
-      setGuessStatus("Reveal a tile and let the current player guess or skip.", "ok");
-      hideOverlayMessage();
-
-      if (!hasStartedAtLeastOnce) {
-        hasStartedAtLeastOnce = true;
-        setTimeout(() => setSetupCollapsed(true), 200);
-      }
-    }
-
-    startRoundBtn.addEventListener("click", () => {
-      setupRound();
-    });
-
-    // ----- Reveal Tiles -----
-    function revealRandomTile() {
-      if (!gameActive) {
-        setGuessStatus("Start a round first.", "error");
-        return;
-      }
-      if (unrevealedTileIndices.length === 0) {
-        setGuessStatus("All tiles are already revealed.", "error");
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * unrevealedTileIndices.length);
-      const tileIndex = unrevealedTileIndices[randomIndex];
-      unrevealedTileIndices.splice(randomIndex, 1);
-
-      const tile = tiles[tileIndex];
-      if (tile && !tile.classList.contains("revealed")) {
-        tile.classList.add("revealed");
-        revealedTilesCount++;
-      }
-
-      setGuessStatus("Tile revealed. Current player may guess or skip.", "");
-    }
-
-    revealTileBtn.addEventListener("click", () => {
-      revealRandomTile();
-    });
-
-    // ----- Reveal All -----
-    function revealAllTiles() {
-      tiles.forEach((tile) => tile.classList.add("revealed"));
-      unrevealedTileIndices = [];
-      revealedTilesCount = totalTiles;
-    }
-
-    revealAllBtn.addEventListener("click", () => {
-      if (!currentPuzzle) {
-        revealAllTiles();
-        return;
-      }
-      if (!gameActive) {
-        revealAllTiles();
-        return;
-      }
-      revealAllTiles();
-      gameActive = false;
-      disableGameControls(true);
-      showOverlayMessage("Round over – no correct guess!");
-      setGuessStatus("Round ended. Click Start / Reset Round for a new puzzle.", "error");
-    });
-
-    // ----- Guess Handling -----
-    function handleGuess() {
-      if (!gameActive) {
-        setGuessStatus("Start a round first.", "error");
-        return;
-      }
-      if (!currentPuzzle) {
-        setGuessStatus("No puzzle selected. Start a round.", "error");
-        return;
-      }
-
-      const guess = guessInput.value.trim();
-      if (!guess) {
-        setGuessStatus("Enter a guess first or use Skip Turn.", "error");
-        return;
-      }
-
-      const normalizedGuess = normalizeAnswer(guess);
-      const isCorrect = currentPuzzleAnswersNormalized.some((ans) => ans === normalizedGuess);
-
-      if (isCorrect) {
-        const tilesRemaining = totalTiles - revealedTilesCount;
-        const pointsAwarded = tilesRemaining + 1;
-        scores[currentPlayerIndex] += pointsAwarded;
-        updateScores();
-
-        const playerName = currentPlayerIndex === 0 ? "Xylie" : "Josh";
-
-        setGuessStatus(
-          `${playerName} is correct! +${pointsAwarded} points (tiles remaining: ${tilesRemaining}).`,
-          "ok"
-        );
-        revealAllTiles();
-        gameActive = false;
-        disableGameControls(true);
-        showOverlayMessage(`${playerName} got it!\n+${pointsAwarded} points`);
-      } else {
-        setGuessStatus("Incorrect guess. Turn passes to the other player.", "error");
-        guessInput.value = "";
-        switchTurn();
-      }
-    }
-
-    submitGuessBtn.addEventListener("click", handleGuess);
-
-    guessInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleGuess();
-      }
-    });
-
-    skipGuessBtn.addEventListener("click", () => {
-      if (!gameActive) {
-        setGuessStatus("Start a round first.", "error");
-        return;
-      }
-      setGuessStatus("Turn skipped. Passing to the other player.", "");
-      guessInput.value = "";
-      switchTurn();
-    });
-
-    // ----- Scores reset -----
-    resetScoresBtn.addEventListener("click", () => {
-      scores = [0, 0];
-      updateScores();
-      setSetupStatus("Scores reset.", "ok");
-    });
-
-    // ----- Init -----
-    updateScores();
-    highlightCurrentTurn();
-    disableGameControls(true);
-    setSetupCollapsed(false); // visible at start
-    setSetupStatus("Loading puzzles…", "");
-    loadPuzzles();
-  </script>
-</body>
-</html>
