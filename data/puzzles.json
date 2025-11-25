@@ -1,0 +1,27 @@
+[
+  {
+    "id": "nightmare-best-friend",
+    "image": "images/nightmare.png",
+    "answers": [
+      "nightmare's best friend",
+      "nightmares best friend",
+      "friend john",
+      "friend  john"
+    ]
+  },
+  {
+    "id": "chicken-out",
+    "image": "images/chicken-out.png",
+    "answers": [
+      "chicken out",
+      "chickening out"
+    ]
+  },
+  {
+    "id": "hot-potato",
+    "image": "images/hot-potato.png",
+    "answers": [
+      "hot potato"
+    ]
+  }
+]
