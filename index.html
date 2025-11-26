@@ -473,6 +473,7 @@
     let scores = [0, 0];
     let revealAnimationRunning = false;
     let canReveal = false; // controls whether Reveal button is allowed
+    let usedPuzzleIndices = [];
     let nextStartingPlayerIndex = 0; // who starts next round
 
     // ----- DOM Elements -----
@@ -647,9 +648,22 @@
     // ----- Round Setup -----
     function pickRandomPuzzle() {
       if (!puzzles || puzzles.length === 0) return null;
-      const randomIndex = Math.floor(Math.random() * puzzles.length);
-      return puzzles[randomIndex];
+    
+      // If all puzzles have been used, reset the cycle
+      if (usedPuzzleIndices.length === puzzles.length) {
+        usedPuzzleIndices = [];
+      }
+    
+      // Pick an unused one
+      let index;
+      do {
+        index = Math.floor(Math.random() * puzzles.length);
+      } while (usedPuzzleIndices.includes(index));
+    
+      usedPuzzleIndices.push(index);
+      return puzzles[index];
     }
+
 
     function setupRound() {
       setGuessStatus("");
@@ -937,4 +951,5 @@
   </script>
 </body>
 </html>
+
 
