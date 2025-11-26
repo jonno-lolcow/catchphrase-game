@@ -1,27 +1,55 @@
 [
   {
-    "id": "nightmare-best-friend",
-    "image": "images/nightmare.png",
+    "image": "images/option1.png",
+    "answers": ["Nuts", "Lolcownuts", "Lolcow Nuts"]
+  },
+  {
+    "image": "images/option2.png",
+    "answers": ["Rebel", "Lolcowrebel", "Lolcow Rebel"]
+  },
+  {
+    "image": "images/option3.png",
+    "answers": ["Cash", "Lolcowcash", "Lolcow Cash"]
+  },
+  {
+    "image": "images/option4.png",
+    "answers": ["Babe", "Lolcowbabe", "Lolcow Babe"]
+  },
+  {
+    "image": "images/option5.png",
     "answers": [
-      "nightmare's best friend",
-      "nightmares best friend",
-      "friend john",
-      "friend  john"
+      "TechTalk",
+      "LolcowTechTalk",
+      "Lolcow TechTalk",
+      "Technically Talking"
     ]
   },
   {
-    "id": "chicken-out",
-    "image": "images/chicken-out.png",
-    "answers": [
-      "chicken out",
-      "chickening out"
-    ]
+    "image": "images/option6.png",
+    "answers": ["Pit", "LolcowPit", "Lolcow Pit"]
   },
   {
-    "id": "hot-potato",
-    "image": "images/hot-potato.png",
-    "answers": [
-      "hot potato"
-    ]
+    "image": "images/option7.png",
+    "answers": ["Rain", "LolcowRain", "Lolcow Rain"]
+  },
+  {
+    "image": "images/option8.png",
+    "answers": ["Chubby", "LolcowChubby", "Lolcow Chubby"]
+  },
+  {
+    "image": "images/option9.png",
+    "answers": ["Queens", "Queen", "LolcowQueen", "Lolcow Queen"]
+  },
+  {
+    "image": "images/option10.png",
+    "answers": ["Dolls", "LolcowDolls", "Lolcow Dolls"]
+  },
+  {
+    "image": "images/option11.png",
+    "answers": ["Alpha", "LolcowAlpha", "Lolcow Alpha"]
+  },
+  {
+    "image": "images/option12.png",
+    "answers": ["Live", "LolcowLive", "Lolcow Live", "LCL"]
   }
 ]
