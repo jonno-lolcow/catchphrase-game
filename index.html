@@ -412,6 +412,7 @@
           <button id="submitGuessBtn" class="primary">Guess</button>
           <button id="skipGuessBtn">Skip</button>
           <button id="revealTileBtn" class="primary">Reveal</button>
+          <button id="nextRoundBtn" disabled>Next</button>
         </div>
 
         <div class="status" id="guessStatus"></div>
@@ -472,6 +473,7 @@
     let scores = [0, 0];
     let revealAnimationRunning = false;
     let canReveal = false; // controls whether Reveal button is allowed
+    let nextStartingPlayerIndex = 0; // who starts next round
 
     // ----- DOM Elements -----
     const rowsInput = document.getElementById("rowsInput");
@@ -497,6 +499,7 @@
     const submitGuessBtn = document.getElementById("submitGuessBtn");
     const skipGuessBtn = document.getElementById("skipGuessBtn");
     const revealTileBtn = document.getElementById("revealTileBtn");
+    const nextRoundBtn = document.getElementById("nextRoundBtn");
 
     const boardContainer = document.getElementById("boardContainer");
     const imageLayer = document.getElementById("imageLayer");
@@ -671,6 +674,10 @@
         return;
       }
 
+      // who starts this round?
+      currentPlayerIndex = nextStartingPlayerIndex;
+      highlightCurrentTurn();
+
       currentPuzzle = puzzle;
       currentPuzzleAnswersNormalized = puzzle.answers.map(normalizeAnswer);
 
@@ -695,6 +702,7 @@
 
       gameActive = true;
       canReveal = true;
+      nextRoundBtn.disabled = true;
       disableGameControls(false);
       revealAllBtn.disabled = false;
       guessInput.value = "";
@@ -815,6 +823,7 @@
       disableGameControls(true);
       showOverlayMessage("Round over – no correct guess!");
       setGuessStatus("Round ended. Click Start / Reset Round for a new puzzle.", "error");
+      // No winner in this case -> Next stays disabled, start via Setup if needed
     });
 
     // ----- Guess Handling -----
@@ -857,6 +866,10 @@
         showOverlayMessage(`${playerName} got it!\n+${pointsAwarded} points`);
 
         triggerReaperAnimation("correct");
+
+        // next round starts with the opposite player
+        nextStartingPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
+        nextRoundBtn.disabled = false;
       } else {
         setGuessStatus("Incorrect guess. Turn passes to the other player.", "error");
         guessInput.value = "";
@@ -899,6 +912,12 @@
       }
 
       triggerReaperAnimation("wrong");
+    });
+
+    // ----- Next Round from main panel -----
+    nextRoundBtn.addEventListener("click", () => {
+      if (!puzzles || puzzles.length === 0) return;
+      setupRound();
     });
 
     // ----- Scores reset -----
