@@ -188,12 +188,17 @@
     .tile {
       background: #333;
       border: 1px solid #111;
-      transition: background 0.25s ease;
+      transition: background 1s ease, border-color 1s ease, box-shadow 0.15s ease;
     }
 
     .tile.revealed {
       background: transparent;
       border-color: transparent;
+    }
+
+    .tile.highlight {
+      background: #505050;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.45);
     }
 
     #overlayMessage {
@@ -280,14 +285,14 @@
     }
 
     #reaperMascotWrapper img {
-      max-height: 320px; /* make him big */
+      max-height: 320px;
       width: auto;
       opacity: 0.95;
       filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9));
       transition: filter 0.2s ease;
     }
 
-    /* Animations */
+    /* Animations for Reaper */
     @keyframes reaper-wrong {
       0%   { transform: translateX(0); }
       15%  { transform: translateX(-10px); }
@@ -470,6 +475,7 @@
     let currentPlayerIndex = 0; // 0 = Xylie, 1 = Josh
     let scores = [0, 0];
     let hasStartedAtLeastOnce = false;
+    let revealAnimationRunning = false;
 
     // ----- DOM Elements -----
     const rowsInput = document.getElementById("rowsInput");
@@ -579,8 +585,7 @@
         img.style.filter = "drop-shadow(0 0 10px rgba(0,0,0,0.9))";
       }
 
-      // restart animation
-      void reaperMascot.offsetWidth;
+      void reaperMascot.offsetWidth; // restart animation
 
       if (type === "wrong") {
         reaperMascot.classList.add("wrong");
@@ -704,8 +709,24 @@
 
     startRoundBtn.addEventListener("click", setupRound);
 
-    // ----- Reveal Tiles -----
-    function revealRandomTile() {
+    // ----- Tile revealing helpers -----
+    function revealTileByIndex(tileIndex) {
+      if (!Number.isInteger(tileIndex) || tileIndex < 0 || tileIndex >= tiles.length) return;
+      const tile = tiles[tileIndex];
+      if (!tile || tile.classList.contains("revealed")) return;
+
+      tile.classList.add("revealed");
+
+      const idxInUnrevealed = unrevealedTileIndices.indexOf(tileIndex);
+      if (idxInUnrevealed !== -1) {
+        unrevealedTileIndices.splice(idxInUnrevealed, 1);
+      }
+
+      revealedTilesCount++;
+    }
+
+    // ----- Reveal Tiles with suspense animation -----
+    function revealRandomTileWithAnimation() {
       if (!gameActive) {
         setGuessStatus("Start a round first.", "error");
         return;
@@ -714,25 +735,74 @@
         setGuessStatus("All tiles are already revealed.", "error");
         return;
       }
-
-      const randomIndex = Math.floor(Math.random() * unrevealedTileIndices.length);
-      const tileIndex = unrevealedTileIndices[randomIndex];
-      unrevealedTileIndices.splice(randomIndex, 1);
-
-      const tile = tiles[tileIndex];
-      if (tile && !tile.classList.contains("revealed")) {
-        tile.classList.add("revealed");
-        revealedTilesCount++;
+      if (revealAnimationRunning) {
+        return; // ignore double-clicks
       }
 
-      setGuessStatus("Tile revealed. Current player may guess or skip.", "");
+      revealAnimationRunning = true;
+      revealTileBtn.disabled = true;
+
+      const highlightDurationMs = 3000;
+      const stepMs = 150;
+      const steps = Math.floor(highlightDurationMs / stepMs); // ~20
+      let currentStep = 0;
+      let lastHighlightedIndex = null;
+
+      const intervalId = setInterval(() => {
+        if (!gameActive || unrevealedTileIndices.length === 0) {
+          clearInterval(intervalId);
+          if (lastHighlightedIndex !== null && tiles[lastHighlightedIndex]) {
+            tiles[lastHighlightedIndex].classList.remove("highlight");
+          }
+          revealAnimationRunning = false;
+          if (gameActive && unrevealedTileIndices.length > 0) {
+            revealTileBtn.disabled = false;
+          }
+          return;
+        }
+
+        const randomPos = Math.floor(Math.random() * unrevealedTileIndices.length);
+        const tileIndex = unrevealedTileIndices[randomPos];
+
+        if (lastHighlightedIndex !== null && tiles[lastHighlightedIndex]) {
+          tiles[lastHighlightedIndex].classList.remove("highlight");
+        }
+        if (tiles[tileIndex]) {
+          tiles[tileIndex].classList.add("highlight");
+        }
+        lastHighlightedIndex = tileIndex;
+        currentStep++;
+
+        if (currentStep >= steps) {
+          clearInterval(intervalId);
+
+          // remove highlight and reveal this tile
+          if (lastHighlightedIndex !== null && tiles[lastHighlightedIndex]) {
+            tiles[lastHighlightedIndex].classList.remove("highlight");
+          }
+
+          const finalIndex = tileIndex;
+          revealTileByIndex(finalIndex);
+
+          revealAnimationRunning = false;
+          if (gameActive && unrevealedTileIndices.length > 0) {
+            revealTileBtn.disabled = false;
+          }
+
+          setGuessStatus("Tile revealed. Current player may guess or skip.", "");
+        }
+      }, stepMs);
     }
 
-    revealTileBtn.addEventListener("click", revealRandomTile);
+    revealTileBtn.addEventListener("click", revealRandomTileWithAnimation);
 
     // ----- Reveal All -----
     function revealAllTiles() {
-      tiles.forEach((tile) => tile.classList.add("revealed"));
+      tiles.forEach((tile) => {
+        if (tile && !tile.classList.contains("revealed")) {
+          tile.classList.add("revealed");
+        }
+      });
       unrevealedTileIndices = [];
       revealedTilesCount = totalTiles;
     }
