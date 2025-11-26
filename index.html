@@ -406,16 +406,12 @@
 
         <h2 style="margin-top:0.9rem;">Guess</h2>
 
-        <label for="guessInput">Enter guess</label>
-        <input type="text" id="guessInput" placeholder="Enter catchphrase guess here..." />
+        <input type="text" id="guessInput" placeholder="Guess" />
 
         <div class="row">
-          <button id="submitGuessBtn" class="primary">Submit Guess</button>
-          <button id="skipGuessBtn">Skip Turn</button>
-        </div>
-
-        <div class="row" style="margin-top:0.6rem;">
-          <button id="revealTileBtn" class="primary">Reveal Random Tile</button>
+          <button id="submitGuessBtn" class="primary">Guess</button>
+          <button id="skipGuessBtn">Skip</button>
+          <button id="revealTileBtn" class="primary">Reveal</button>
         </div>
 
         <div class="status" id="guessStatus"></div>
@@ -474,8 +470,8 @@
     let gameActive = false;
     let currentPlayerIndex = 0; // 0 = Xylie, 1 = Josh
     let scores = [0, 0];
-    let hasStartedAtLeastOnce = false;
     let revealAnimationRunning = false;
+    let canReveal = false; // controls whether Reveal button is allowed
 
     // ----- DOM Elements -----
     const rowsInput = document.getElementById("rowsInput");
@@ -569,11 +565,15 @@
     }
 
     function disableGameControls(disabled) {
-      revealTileBtn.disabled = disabled;
       revealAllBtn.disabled = disabled;
       submitGuessBtn.disabled = disabled;
       skipGuessBtn.disabled = disabled;
       guessInput.disabled = disabled;
+      if (disabled) {
+        revealTileBtn.disabled = true;
+      } else {
+        revealTileBtn.disabled = !canReveal;
+      }
     }
 
     // Reaper animation helper with glow reset
@@ -694,17 +694,14 @@
       }
 
       gameActive = true;
+      canReveal = true;
       disableGameControls(false);
       revealAllBtn.disabled = false;
       guessInput.value = "";
       setSetupStatus(`Round started with ${rows} × ${cols} grid (${totalTiles} tiles).`, "ok");
       setGuessStatus("Reveal a tile and let the current player guess or skip.", "ok");
       hideOverlayMessage();
-
-      if (!hasStartedAtLeastOnce) {
-        hasStartedAtLeastOnce = true;
-        setTimeout(() => setSetupCollapsed(true), 200);
-      }
+      setSetupCollapsed(true); // auto-collapse when round starts
     }
 
     startRoundBtn.addEventListener("click", setupRound);
@@ -735,16 +732,18 @@
         setGuessStatus("All tiles are already revealed.", "error");
         return;
       }
-      if (revealAnimationRunning) {
-        return; // ignore double-clicks
+      if (revealAnimationRunning || !canReveal) {
+        return; // ignore if already running or reveal not allowed
       }
+
+      setSetupCollapsed(true); // collapse whenever Reveal pressed
 
       revealAnimationRunning = true;
       revealTileBtn.disabled = true;
 
       const highlightDurationMs = 3000;
       const stepMs = 150;
-      const steps = Math.floor(highlightDurationMs / stepMs); // ~20
+      const steps = Math.floor(highlightDurationMs / stepMs);
       let currentStep = 0;
       let lastHighlightedIndex = null;
 
@@ -755,9 +754,6 @@
             tiles[lastHighlightedIndex].classList.remove("highlight");
           }
           revealAnimationRunning = false;
-          if (gameActive && unrevealedTileIndices.length > 0) {
-            revealTileBtn.disabled = false;
-          }
           return;
         }
 
@@ -776,7 +772,6 @@
         if (currentStep >= steps) {
           clearInterval(intervalId);
 
-          // remove highlight and reveal this tile
           if (lastHighlightedIndex !== null && tiles[lastHighlightedIndex]) {
             tiles[lastHighlightedIndex].classList.remove("highlight");
           }
@@ -785,9 +780,8 @@
           revealTileByIndex(finalIndex);
 
           revealAnimationRunning = false;
-          if (gameActive && unrevealedTileIndices.length > 0) {
-            revealTileBtn.disabled = false;
-          }
+          canReveal = false;
+          revealTileBtn.disabled = true;
 
           setGuessStatus("Tile revealed. Current player may guess or skip.", "");
         }
@@ -836,9 +830,11 @@
 
       const guess = guessInput.value.trim();
       if (!guess) {
-        setGuessStatus("Enter a guess first or use Skip Turn.", "error");
+        setGuessStatus("Enter a guess first or use Skip.", "error");
         return;
       }
+
+      setSetupCollapsed(true); // collapse whenever Guess pressed
 
       const normalizedGuess = normalizeAnswer(guess);
       const isCorrect = currentPuzzleAnswersNormalized.some((ans) => ans === normalizedGuess);
@@ -865,6 +861,13 @@
         setGuessStatus("Incorrect guess. Turn passes to the other player.", "error");
         guessInput.value = "";
         switchTurn();
+
+        // After an incorrect guess, allow Reveal again (if tiles remain)
+        if (gameActive && unrevealedTileIndices.length > 0) {
+          canReveal = true;
+          revealTileBtn.disabled = false;
+        }
+
         triggerReaperAnimation("wrong");
       }
     }
@@ -883,9 +886,18 @@
         setGuessStatus("Start a round first.", "error");
         return;
       }
+
+      setSetupCollapsed(true); // collapse whenever Skip pressed
+
       setGuessStatus("Turn skipped. Passing to the other player.", "");
       guessInput.value = "";
       switchTurn();
+
+      if (gameActive && unrevealedTileIndices.length > 0) {
+        canReveal = true;
+        revealTileBtn.disabled = false;
+      }
+
       triggerReaperAnimation("wrong");
     });
 
@@ -900,7 +912,7 @@
     updateScores();
     highlightCurrentTurn();
     disableGameControls(true);
-    setSetupCollapsed(false);
+    setSetupCollapsed(false); // open on first load
     setSetupStatus("Loading puzzles…", "");
     loadPuzzles();
   </script>
